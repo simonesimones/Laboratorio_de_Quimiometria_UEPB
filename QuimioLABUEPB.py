@@ -231,301 +231,110 @@ elif modulo=="Pré-processamento":
     st.header("🔬 Pré-processamento")
 
     arquivo = st.file_uploader(
-
         "Carregue CSV ou XLSX",
-
         type=["csv","xlsx"],
-
         key="prep"
-
     )
 
     if arquivo:
 
         if arquivo.name.endswith(".xlsx"):
-
             dados = pd.read_excel(arquivo)
-
         else:
-
             dados = pd.read_csv(arquivo)
 
         X = dados.select_dtypes(include=np.number)
 
         metodo = st.selectbox(
-
             "Método",
-
-            [
-
-                "Nenhum",
-
-                "Centralização",
-
-                "Autoescalamento",
-
-                "SNV"
-
-            ]
-
+            ["Nenhum","Centralização","Autoescalamento","SNV"]
         )
 
         if metodo=="Nenhum":
-
             Xproc = X.copy()
-
         elif metodo=="Centralização":
-
             Xproc = X - X.mean()
-
         elif metodo=="Autoescalamento":
-
             Xproc = (X - X.mean())/X.std()
-
         elif metodo=="SNV":
+            Xproc = (X.sub(X.mean(axis=1), axis=0)
+                        .div(X.std(axis=1), axis=0))
 
-            Xproc = (
+        st.subheader("Dados Processados")
+        st.dataframe(Xproc.head())
 
-                X.sub(
-
-                    X.mean(axis=1),
-
-                    axis=0
-
-                )
-
-            ).div(
-
-                X.std(axis=1),
-
-                axis=0
-
-            )
-
-        st.subheader(
-
-            "Dados Processados"
-
-        )
-
-        st.dataframe(
-
-            Xproc.head()
-
-        )
-
-        variavel = st.selectbox(
-
-            "Escolha uma variável",
-
-            X.columns
-
-        )
+        variavel = st.selectbox("Escolha uma variável", X.columns)
 
         fig,ax = plt.subplots()
-
-        ax.hist(
-
-            X[variavel],
-
-            alpha=0.5,
-
-            label="Original"
-
-        )
-
-        ax.hist(
-
-            Xproc[variavel],
-
-            alpha=0.5,
-
-            label="Processado"
-
-        )
-
+        ax.hist(X[variavel], alpha=0.5, label="Original")
+        ax.hist(Xproc[variavel], alpha=0.5, label="Processado")
         ax.legend()
-
         st.pyplot(fig)
 
         fig2,ax2 = plt.subplots()
-
-        ax2.boxplot(
-
-            [
-
-                X[variavel],
-
-                Xproc[variavel]
-
-            ]
-
-        )
-
-        ax2.set_xticklabels(
-
-            [
-
-                "Original",
-
-                "Processado"
-
-            ]
-
-        )
-
+        ax2.boxplot([X[variavel], Xproc[variavel]])
+        ax2.set_xticklabels(["Original","Processado"])
         st.pyplot(fig2)
 
-        st.subheader(
-
-            "Interpretação"
-
-        )
+        st.subheader("Interpretação")
 
         if metodo=="Centralização":
-
-            st.info(
-
-                "Os dados foram centralizados em torno da média."
-
-            )
-
+            st.info("Os dados foram centralizados em torno da média.")
         elif metodo=="Autoescalamento":
-
-            st.info(
-
-                "As variáveis foram padronizadas."
-
-            )
-
+            st.info("As variáveis foram padronizadas.")
         elif metodo=="SNV":
+            st.info("SNV reduz efeitos de espalhamento.")
 
-            st.info(
+        st.success("🏅 Badge desbloqueada: Mestre do Pré-processamento")
 
-                "SNV reduz efeitos de espalhamento."
 
-            )
-
-        st.success(
-
-            "🏅 Badge desbloqueada: Mestre do Pré-processamento"
-
-        )
-
-st.subheader(
-
-            "Variância Explicada"
-
-        )
-
-        st.write(
-
-            explained[:5]
-
-        )
-
-        fig,ax = plt.subplots()
-
-        ax.plot(
-
-            explained,
-
-            marker='o'
-
-        )
-
-        ax.set_xlabel(
-
-            "PC"
-
-        )
-
-        ax.set_ylabel(
-
-            "%"
-
-        )
-
-        st.pyplot(fig)
-
-#####################################
-
+# 🔥 CORRETO: bloco separado do PCA
 elif modulo=="Reconhecimento de Padrões":
 
     st.header("📈 PCA")
 
     arquivo = st.file_uploader(
-
         "Carregue CSV ou XLSX",
-
         type=["csv","xlsx"],
-
         key="pca"
-
     )
 
     if arquivo:
 
         if arquivo.name.endswith(".xlsx"):
-
             dados = pd.read_excel(arquivo)
-
         else:
-
             dados = pd.read_csv(arquivo)
 
         X = dados.select_dtypes(include=np.number)
 
         metodo = st.selectbox(
-
             "Pré-processamento",
-
-            [
-
-                "Nenhum",
-
-                "Centralização",
-
-                "Autoescalamento"
-
-            ]
-
+            ["Nenhum","Centralização","Autoescalamento"]
         )
 
         if metodo=="Nenhum":
-
             Xproc = X.copy()
-
         elif metodo=="Centralização":
-
             Xproc = X - X.mean()
-
         elif metodo=="Autoescalamento":
-
-            Xproc = (
-
-                X - X.mean()
-
-            )/X.std()
+            Xproc = (X - X.mean())/X.std()
 
         from sklearn.decomposition import PCA
 
         pca = PCA()
-
-        scores = pca.fit_transform(
-
-            Xproc
-
-        )
-
+        scores = pca.fit_transform(Xproc)
         loadings = pca.components_.T
+        explained = pca.explained_variance_ratio_ * 100
 
-        explained = (
+        st.subheader("Variância Explicada")
+        st.write(explained[:5])
 
-            pca.explained_variance_ratio_
-
-        )*100
-
+        fig,ax = plt.subplots()
+        ax.plot(explained, marker='o')
+        ax.set_xlabel("PC")
+        ax.set_ylabel("%")
+        st.pyplot(fig)
 
 #####################################
 
