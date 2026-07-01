@@ -526,6 +526,7 @@ elif modulo=="Reconhecimento de Padrões":
 
         )*100
 
+
 #####################################
 
 elif modulo=="Classificação":
