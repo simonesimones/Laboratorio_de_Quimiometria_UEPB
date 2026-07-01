@@ -412,6 +412,42 @@ elif modulo=="Pré-processamento":
 
         )
 
+st.subheader(
+
+            "Variância Explicada"
+
+        )
+
+        st.write(
+
+            explained[:5]
+
+        )
+
+        fig,ax = plt.subplots()
+
+        ax.plot(
+
+            explained,
+
+            marker='o'
+
+        )
+
+        ax.set_xlabel(
+
+            "PC"
+
+        )
+
+        ax.set_ylabel(
+
+            "%"
+
+        )
+
+        st.pyplot(fig)
+
 #####################################
 
 elif modulo=="Reconhecimento de Padrões":
