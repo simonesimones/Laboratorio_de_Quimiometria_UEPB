@@ -336,6 +336,18 @@ elif modulo=="Reconhecimento de Padrões":
         ax.set_ylabel("%")
         st.pyplot(fig)
 
+	st.subheader("Scores")
+
+        fig2,ax2 = plt.subplots()
+
+        ax2.scatter(scores[:,0], scores[:,1])
+
+        ax2.set_xlabel(f"PC1 ({explained[0]:.1f}%)")
+
+        ax2.set_ylabel(f"PC2 ({explained[1]:.1f}%)")
+
+        st.pyplot(fig2)
+
 #####################################
 
 elif modulo=="Classificação":
