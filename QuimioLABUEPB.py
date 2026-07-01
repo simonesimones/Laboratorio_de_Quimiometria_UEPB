@@ -525,6 +525,7 @@ elif modulo=="Reconhecimento de Padrões":
             pca.explained_variance_ratio_
 
         )*100
+
 #####################################
 
 elif modulo=="Classificação":
