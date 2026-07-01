@@ -416,12 +416,79 @@ elif modulo=="Pré-processamento":
 
 elif modulo=="Reconhecimento de Padrões":
 
-    st.header(
+    st.header("📈 PCA")
 
-"📈 Em desenvolvimento"
+    arquivo = st.file_uploader(
 
-)
+        "Carregue CSV ou XLSX",
 
+        type=["csv","xlsx"],
+
+        key="pca"
+
+    )
+
+    if arquivo:
+
+        if arquivo.name.endswith(".xlsx"):
+
+            dados = pd.read_excel(arquivo)
+
+        else:
+
+            dados = pd.read_csv(arquivo)
+
+        X = dados.select_dtypes(include=np.number)
+
+        metodo = st.selectbox(
+
+            "Pré-processamento",
+
+            [
+
+                "Nenhum",
+
+                "Centralização",
+
+                "Autoescalamento"
+
+            ]
+
+        )
+
+        if metodo=="Nenhum":
+
+            Xproc = X.copy()
+
+        elif metodo=="Centralização":
+
+            Xproc = X - X.mean()
+
+        elif metodo=="Autoescalamento":
+
+            Xproc = (
+
+                X - X.mean()
+
+            )/X.std()
+
+        from sklearn.decomposition import PCA
+
+        pca = PCA()
+
+        scores = pca.fit_transform(
+
+            Xproc
+
+        )
+
+        loadings = pca.components_.T
+
+        explained = (
+
+            pca.explained_variance_ratio_
+
+        )*100
 #####################################
 
 elif modulo=="Classificação":
