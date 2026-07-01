@@ -62,233 +62,6 @@ modulo = st.sidebar.selectbox(
 
 #####################################
 
-if modulo=="Explorador de Dados":
-
-    st.header("📊 Explorador de Dados")
-
-    arquivo = st.file_uploader(
-
-        "Carregar CSV ou XLSX",
-
-        type=["csv","xlsx"]
-
-    )
-
-    if arquivo:
-
-        if arquivo.name.endswith(".xlsx"):
-
-            dados = pd.read_excel(arquivo)
-
-        else:
-
-            dados = pd.read_csv(arquivo)
-
-        st.subheader("Dados")
-
-        st.dataframe(dados)
-
-        X = dados.select_dtypes(include="number")
-
-        n_amostras = X.shape[0]
-
-        n_variaveis = X.shape[1]
-
-        st.subheader("Resumo")
-
-        col1,col2 = st.columns(2)
-
-        col1.metric(
-
-            "Amostras",
-
-            n_amostras
-
-        )
-
-        col2.metric(
-
-            "Variáveis",
-
-            n_variaveis
-
-        )
-
-        st.subheader(
-
-            "Estatística Descritiva"
-
-        )
-
-        st.dataframe(
-
-            X.describe()
-
-        )
-
-        st.subheader(
-
-            "Histograma"
-
-        )
-
-        var = st.selectbox(
-
-            "Escolha uma variável",
-
-            X.columns
-
-        )
-
-        fig,ax = plt.subplots()
-
-        ax.hist(
-
-            X[var],
-
-            bins=20
-
-        )
-
-        st.pyplot(fig)
-
-        st.subheader(
-
-            "Boxplot"
-
-        )
-
-        fig2,ax2 = plt.subplots()
-
-        ax2.boxplot(
-
-            X[var]
-
-        )
-
-        st.pyplot(fig2)
-
-        st.subheader(
-
-            "Correlação"
-
-        )
-
-        corr = X.corr()
-
-        fig3,ax3 = plt.subplots(
-
-            figsize=(7,7)
-
-        )
-
-        im = ax3.imshow(
-
-            corr,
-
-            aspect='auto'
-
-        )
-
-        plt.colorbar(im)
-
-        st.pyplot(fig3)
-
-        st.subheader(
-
-            "Interpretação"
-
-        )
-
-        st.info(
-
-f"""
-
-Foram carregadas {n_amostras} amostras
-
-e {n_variaveis} variáveis.
-
-Analise a dispersão dos dados
-
-e avalie a necessidade
-
-de pré-processamento.
-
-"""
-
-)
-
-        st.success(
-
-"🏅 Badge desbloqueada: Explorador Químico"
-
-)
-
-#####################################
-
-elif modulo=="Pré-processamento":
-
-    st.header("🔬 Pré-processamento")
-
-    arquivo = st.file_uploader(
-        "Carregue CSV ou XLSX",
-        type=["csv","xlsx"],
-        key="prep"
-    )
-
-    if arquivo:
-
-        if arquivo.name.endswith(".xlsx"):
-            dados = pd.read_excel(arquivo)
-        else:
-            dados = pd.read_csv(arquivo)
-
-        X = dados.select_dtypes(include=np.number)
-
-        metodo = st.selectbox(
-            "Método",
-            ["Nenhum","Centralização","Autoescalamento","SNV"]
-        )
-
-        if metodo=="Nenhum":
-            Xproc = X.copy()
-        elif metodo=="Centralização":
-            Xproc = X - X.mean()
-        elif metodo=="Autoescalamento":
-            Xproc = (X - X.mean())/X.std()
-        elif metodo=="SNV":
-            Xproc = (X.sub(X.mean(axis=1), axis=0)
-                        .div(X.std(axis=1), axis=0))
-
-        st.subheader("Dados Processados")
-        st.dataframe(Xproc.head())
-
-        variavel = st.selectbox("Escolha uma variável", X.columns)
-
-        fig,ax = plt.subplots()
-        ax.hist(X[variavel], alpha=0.5, label="Original")
-        ax.hist(Xproc[variavel], alpha=0.5, label="Processado")
-        ax.legend()
-        st.pyplot(fig)
-
-        fig2,ax2 = plt.subplots()
-        ax2.boxplot([X[variavel], Xproc[variavel]])
-        ax2.set_xticklabels(["Original","Processado"])
-        st.pyplot(fig2)
-
-        st.subheader("Interpretação")
-
-        if metodo=="Centralização":
-            st.info("Os dados foram centralizados em torno da média.")
-        elif metodo=="Autoescalamento":
-            st.info("As variáveis foram padronizadas.")
-        elif metodo=="SNV":
-            st.info("SNV reduz efeitos de espalhamento.")
-
-        st.success("🏅 Badge desbloqueada: Mestre do Pré-processamento")
-
-
-# 🔥 CORRETO: bloco separado do PCA
 elif modulo=="Reconhecimento de Padrões":
 
     st.header("📈 PCA")
@@ -330,23 +103,68 @@ elif modulo=="Reconhecimento de Padrões":
         st.subheader("Variância Explicada")
         st.write(explained[:5])
 
-        fig,ax = plt.subplots()
+        fig, ax = plt.subplots()
         ax.plot(explained, marker='o')
         ax.set_xlabel("PC")
         ax.set_ylabel("%")
         st.pyplot(fig)
 
-	st.subheader("Scores")
+        # 🔥 SCORES (corrigido)
+        st.subheader("Scores")
 
-        fig2,ax2 = plt.subplots()
-
+        fig2, ax2 = plt.subplots()
         ax2.scatter(scores[:,0], scores[:,1])
-
         ax2.set_xlabel(f"PC1 ({explained[0]:.1f}%)")
-
         ax2.set_ylabel(f"PC2 ({explained[1]:.1f}%)")
-
         st.pyplot(fig2)
+
+        # 🔥 LOADINGS
+        st.subheader("Loadings")
+
+        fig3, ax3 = plt.subplots()
+        ax3.scatter(loadings[:,0], loadings[:,1])
+
+        for i, var in enumerate(X.columns):
+            ax3.text(loadings[i,0], loadings[i,1], var)
+
+        st.pyplot(fig3)
+
+        # 🔥 INTERPRETAÇÃO
+        st.subheader("Interpretação")
+
+        st.info(f"""
+PC1 explica {explained[0]:.2f}% da variância.  
+PC2 explica {explained[1]:.2f}%.  
+PC1+PC2 explicam {explained[0]+explained[1]:.2f}%.
+""")
+
+        # 🔥 PERFIL
+        perfil = st.sidebar.radio(
+            "Perfil",
+            ["Aprendiz","Mestre"]
+        )
+
+        if perfil == "Aprendiz":
+            st.success("🏅 Badge desbloqueada: Explorador Multivariado")
+
+        if perfil == "Mestre":
+            st.subheader("Tabela de Loadings")
+
+            tabela = pd.DataFrame(
+                loadings,
+                index=X.columns,
+                columns=[f"PC{i+1}" for i in range(loadings.shape[1])]
+            )
+
+            st.dataframe(tabela)
+
+        # 🔥 QUIZ
+        st.subheader("Quiz")
+
+        st.radio(
+            "Quantos PCs explicam mais de 95% da variância?",
+            ["1","2","3","4"]
+        )
 
 #####################################
 
