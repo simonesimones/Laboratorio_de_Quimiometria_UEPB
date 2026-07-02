@@ -1,17 +1,27 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
 st.set_page_config(
-    page_title="QuimioLab UEPB",
+    page_title="QuimiLAB UEPB",
     page_icon="🧪",
     layout="wide"
 )
 
-st.title("🧪 QuimioLab UEPB")
-st.markdown("### Plataforma Interativa para Ensino de Quimiometria")
+st.title("🧪 QuimiLAB UEPB")
+st.markdown("### Plataforma gamificada para ensino de Quimiometria")
+
+# =========================
+# CONFIGURAÇÕES INICIAIS
+# =========================
+
+if "fase_liberada" not in st.session_state:
+    st.session_state.fase_liberada = 1
+
+if "badges" not in st.session_state:
+    st.session_state.badges = []
 
 perfil = st.sidebar.radio(
     "Perfil",
@@ -19,24 +29,43 @@ perfil = st.sidebar.radio(
 )
 
 st.sidebar.success(f"Modo selecionado: {perfil}")
-st.sidebar.markdown("---")
 
-modulo = st.sidebar.selectbox(
-    "Escolha um módulo",
-    [
-        "Explorador de Dados",
-        "Pré-processamento",
-        "Reconhecimento de Padrões",
-        "Classificação",
-        "Calibração",
-        "Escape Room"
-    ]
+fases = {
+    1: "Explorador de Dados",
+    2: "Pré-processamento",
+    3: "Reconhecimento de Padrões",
+    4: "Classificação",
+    5: "Calibração",
+    6: "Escape Room"
+}
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎮 Jornada")
+
+for numero, nome in fases.items():
+    if numero <= st.session_state.fase_liberada:
+        st.sidebar.write(f"🔓 Fase {numero}: {nome}")
+    else:
+        st.sidebar.write(f"🔒 Fase {numero}: {nome}")
+
+fase_escolhida = st.sidebar.selectbox(
+    "Escolha a fase",
+    list(fases.keys()),
+    format_func=lambda x: f"Fase {x} - {fases[x]}"
 )
 
+if fase_escolhida > st.session_state.fase_liberada:
+    st.error("🔒 Esta fase ainda está bloqueada. Obtenha nota mínima 8 na fase anterior.")
+    st.stop()
+
+
+# =========================
+# FUNÇÕES AUXILIARES
+# =========================
 
 def carregar_dados(chave):
     arquivo = st.file_uploader(
-        "Carregue CSV ou XLSX",
+        "Carregue um arquivo CSV ou XLSX",
         type=["csv", "xlsx"],
         key=chave
     )
@@ -58,25 +87,72 @@ def carregar_dados(chave):
     return None, None
 
 
-def aplicar_preprocessamento(X, metodo):
+def preprocessar(X, metodo):
     if metodo == "Nenhum":
         return X.copy()
 
-    if metodo == "Centralização":
+    elif metodo == "Centralização":
         return X - X.mean()
 
-    if metodo == "Autoescalamento":
+    elif metodo == "Autoescalamento":
         return (X - X.mean()) / X.std()
 
-    if metodo == "SNV":
+    elif metodo == "SNV":
         return X.sub(X.mean(axis=1), axis=0).div(X.std(axis=1), axis=0)
 
     return X.copy()
 
 
-if modulo == "Explorador de Dados":
+def quiz(titulo, perguntas, gabarito, proxima_fase, badge):
+    st.markdown("---")
+    st.subheader(f"🧩 Quiz - {titulo}")
+    st.write("Responda às 5 perguntas. Cada questão vale 2 pontos. Nota mínima para avançar: **8,0**.")
 
-    st.header("📊 Explorador de Dados")
+    respostas = []
+
+    for i, pergunta in enumerate(perguntas):
+        resp = st.radio(
+            pergunta["pergunta"],
+            pergunta["opcoes"],
+            key=f"{titulo}_{i}"
+        )
+        respostas.append(resp)
+
+    if st.button("✅ Verificar nota", key=f"botao_{titulo}"):
+
+        acertos = 0
+
+        for r, g in zip(respostas, gabarito):
+            if r == g:
+                acertos += 1
+
+        nota = acertos * 2
+
+        st.subheader(f"Nota: {nota}/10")
+
+        if nota >= 8:
+            st.success("🎉 Parabéns! Fase concluída. Próxima fase liberada.")
+
+            if st.session_state.fase_liberada < proxima_fase:
+                st.session_state.fase_liberada = proxima_fase
+
+            if badge not in st.session_state.badges:
+                st.session_state.badges.append(badge)
+
+            st.success(f"🏅 Badge desbloqueada: {badge}")
+
+        else:
+            st.error("🔒 Você precisa obter pelo menos nota 8 para avançar.")
+            st.info("Revise o conteúdo da fase e tente novamente.")
+
+
+# =========================
+# FASE 1 - EXPLORADOR
+# =========================
+
+if fase_escolhida == 1:
+
+    st.header("📊 Fase 1 — Explorador de Dados")
 
     dados, X = carregar_dados("explorador")
 
@@ -92,7 +168,7 @@ if modulo == "Explorador de Dados":
         st.subheader("Estatística descritiva")
         st.dataframe(X.describe())
 
-        variavel = st.selectbox("Escolha uma variável", X.columns, key="var_explorador")
+        variavel = st.selectbox("Escolha uma variável", X.columns)
 
         st.subheader("Histograma")
         fig, ax = plt.subplots()
@@ -107,39 +183,64 @@ if modulo == "Explorador de Dados":
         ax2.set_ylabel(variavel)
         st.pyplot(fig2)
 
-        st.subheader("Matriz de correlação")
-        corr = X.corr()
-        fig3, ax3 = plt.subplots(figsize=(7, 6))
-        im = ax3.imshow(corr, aspect="auto")
-        ax3.set_xticks(range(len(corr.columns)))
-        ax3.set_yticks(range(len(corr.columns)))
-        ax3.set_xticklabels(corr.columns, rotation=90)
-        ax3.set_yticklabels(corr.columns)
-        plt.colorbar(im)
-        st.pyplot(fig3)
+        perguntas = [
+            {
+                "pergunta": "1. Em quimiometria, o que representa uma linha da matriz X?",
+                "opcoes": ["Uma variável", "Uma amostra", "Um erro", "Um modelo"]
+            },
+            {
+                "pergunta": "2. O que representa uma coluna da matriz X?",
+                "opcoes": ["Uma amostra", "Uma variável", "Uma classe", "Uma validação"]
+            },
+            {
+                "pergunta": "3. Para que serve a estatística descritiva?",
+                "opcoes": ["Avaliar distribuição dos dados", "Criar moléculas", "Eliminar PCA", "Gerar amostras"]
+            },
+            {
+                "pergunta": "4. O boxplot pode ajudar a identificar:",
+                "opcoes": ["Outliers", "Reagentes", "Solventes", "Equipamentos"]
+            },
+            {
+                "pergunta": "5. Um histograma mostra principalmente:",
+                "opcoes": ["Distribuição dos valores", "Estrutura molecular", "Número de PCs", "RMSEP"]
+            }
+        ]
 
-        st.info(
-            f"Foram carregadas {X.shape[0]} amostras e {X.shape[1]} variáveis numéricas."
+        gabarito = [
+            "Uma amostra",
+            "Uma variável",
+            "Avaliar distribuição dos dados",
+            "Outliers",
+            "Distribuição dos valores"
+        ]
+
+        quiz(
+            "Explorador de Dados",
+            perguntas,
+            gabarito,
+            proxima_fase=2,
+            badge="Explorador Químico"
         )
 
-        st.success("🏅 Badge desbloqueada: Explorador Químico")
 
+# =========================
+# FASE 2 - PRÉ-PROCESSAMENTO
+# =========================
 
-elif modulo == "Pré-processamento":
+elif fase_escolhida == 2:
 
-    st.header("🔬 Pré-processamento")
+    st.header("🔬 Fase 2 — Pré-processamento")
 
-    dados, X = carregar_dados("prep")
+    dados, X = carregar_dados("preprocessamento")
 
     if X is not None:
 
         metodo = st.selectbox(
-            "Método",
-            ["Nenhum", "Centralização", "Autoescalamento", "SNV"],
-            key="metodo_prep"
+            "Escolha o pré-processamento",
+            ["Nenhum", "Centralização", "Autoescalamento", "SNV"]
         )
 
-        Xproc = aplicar_preprocessamento(X, metodo)
+        Xproc = preprocessar(X, metodo)
 
         st.subheader("Dados originais")
         st.dataframe(X.head())
@@ -147,86 +248,123 @@ elif modulo == "Pré-processamento":
         st.subheader("Dados processados")
         st.dataframe(Xproc.head())
 
-        variavel = st.selectbox("Escolha uma variável", X.columns, key="var_prep")
+        variavel = st.selectbox("Escolha uma variável", X.columns)
 
-        st.subheader("Comparação: Histograma")
+        st.subheader("Comparação - Histograma")
         fig, ax = plt.subplots()
         ax.hist(X[variavel], alpha=0.5, label="Original")
         ax.hist(Xproc[variavel], alpha=0.5, label="Processado")
         ax.legend()
         st.pyplot(fig)
 
-        st.subheader("Comparação: Boxplot")
+        st.subheader("Comparação - Boxplot")
         fig2, ax2 = plt.subplots()
         ax2.boxplot([X[variavel], Xproc[variavel]])
         ax2.set_xticklabels(["Original", "Processado"])
         st.pyplot(fig2)
 
-        st.subheader("Interpretação")
-
-        if metodo == "Nenhum":
-            st.info("Nenhum pré-processamento foi aplicado.")
-
-        elif metodo == "Centralização":
-            st.info("Os dados foram centralizados em torno da média.")
+        if metodo == "Centralização":
+            st.info("A centralização desloca os dados para média zero.")
 
         elif metodo == "Autoescalamento":
-            st.info("As variáveis foram padronizadas para média zero e desvio padrão igual a um.")
+            st.info("O autoescalamento coloca as variáveis em escala comparável.")
 
         elif metodo == "SNV":
-            st.info("O SNV reduz efeitos de espalhamento e variações entre amostras.")
+            st.info("O SNV reduz variações de espalhamento entre amostras.")
 
-        st.success("🏅 Badge desbloqueada: Mestre do Pré-processamento")
+        perguntas = [
+            {
+                "pergunta": "1. A centralização na média faz com que:",
+                "opcoes": ["A média fique zero", "O RMSEP aumente", "As amostras desapareçam", "A PCA seja proibida"]
+            },
+            {
+                "pergunta": "2. O autoescalamento ajusta:",
+                "opcoes": ["Média e desvio padrão", "Somente a cor", "Somente o nome das amostras", "A massa molar"]
+            },
+            {
+                "pergunta": "3. O SNV é muito usado em:",
+                "opcoes": ["Espectroscopia", "Titulação clássica apenas", "Pesagem simples", "Filtração"]
+            },
+            {
+                "pergunta": "4. O pré-processamento deve ser escolhido com base:",
+                "opcoes": ["No problema analítico", "Na sorte", "Na ordem alfabética", "Na cor do gráfico"]
+            },
+            {
+                "pergunta": "5. Um pré-processamento inadequado pode:",
+                "opcoes": ["Alterar a interpretação dos padrões", "Melhorar sempre", "Eliminar a química", "Impedir qualquer gráfico"]
+            }
+        ]
+
+        gabarito = [
+            "A média fique zero",
+            "Média e desvio padrão",
+            "Espectroscopia",
+            "No problema analítico",
+            "Alterar a interpretação dos padrões"
+        ]
+
+        quiz(
+            "Pré-processamento",
+            perguntas,
+            gabarito,
+            proxima_fase=3,
+            badge="Mestre do Pré-processamento"
+        )
 
 
-elif modulo == "Reconhecimento de Padrões":
+# =========================
+# FASE 3 - PCA
+# =========================
 
-    st.header("📈 Reconhecimento de Padrões — PCA")
+elif fase_escolhida == 3:
+
+    st.header("📈 Fase 3 — Reconhecimento de Padrões")
 
     dados, X = carregar_dados("pca")
 
     if X is not None:
 
         metodo = st.selectbox(
-            "Pré-processamento",
-            ["Nenhum", "Centralização", "Autoescalamento", "SNV"],
-            key="metodo_pca"
+            "Pré-processamento para PCA",
+            ["Nenhum", "Centralização", "Autoescalamento", "SNV"]
         )
 
-        Xproc = aplicar_preprocessamento(X, metodo)
+        Xproc = preprocessar(X, metodo)
 
         pca = PCA()
         scores = pca.fit_transform(Xproc)
         loadings = pca.components_.T
         explained = pca.explained_variance_ratio_ * 100
+        acumulada = np.cumsum(explained)
 
         st.subheader("Variância explicada")
-        tabela_variancia = pd.DataFrame({
-            "Componente": [f"PC{i+1}" for i in range(len(explained))],
-            "Variância explicada (%)": explained
+        tabela_var = pd.DataFrame({
+            "PC": [f"PC{i+1}" for i in range(len(explained))],
+            "Variância (%)": explained,
+            "Variância acumulada (%)": acumulada
         })
-        st.dataframe(tabela_variancia.head(10))
 
+        st.dataframe(tabela_var.head(10))
+
+        st.subheader("Scree Plot")
         fig, ax = plt.subplots()
-        ax.plot(range(1, len(explained) + 1), explained, marker="o")
+        ax.plot(range(1, len(explained)+1), explained, marker="o")
         ax.set_xlabel("Componente principal")
         ax.set_ylabel("Variância explicada (%)")
         st.pyplot(fig)
 
-        st.subheader("Scores: PC1 × PC2")
-
+        st.subheader("Scores PC1 × PC2")
         fig2, ax2 = plt.subplots()
         ax2.scatter(scores[:, 0], scores[:, 1])
 
         for i in range(scores.shape[0]):
-            ax2.text(scores[i, 0], scores[i, 1], str(i + 1))
+            ax2.text(scores[i, 0], scores[i, 1], str(i+1))
 
         ax2.set_xlabel(f"PC1 ({explained[0]:.1f}%)")
         ax2.set_ylabel(f"PC2 ({explained[1]:.1f}%)")
         st.pyplot(fig2)
 
-        st.subheader("Loadings: PC1 × PC2")
-
+        st.subheader("Loadings PC1 × PC2")
         fig3, ax3 = plt.subplots()
         ax3.scatter(loadings[:, 0], loadings[:, 1])
 
@@ -237,50 +375,92 @@ elif modulo == "Reconhecimento de Padrões":
         ax3.set_ylabel("PC2")
         st.pyplot(fig3)
 
-        st.subheader("Interpretação automática")
+        st.info(
+            f"PC1 explica {explained[0]:.2f}% da variância. "
+            f"PC2 explica {explained[1]:.2f}%. "
+            f"Juntas, PC1 e PC2 explicam {explained[0] + explained[1]:.2f}%."
+        )
 
-        st.info(f"""
-PC1 explica {explained[0]:.2f}% da variância.  
-PC2 explica {explained[1]:.2f}% da variância.  
-Juntas, PC1 e PC2 explicam {explained[0] + explained[1]:.2f}% da variabilidade dos dados.
-""")
-
-        if perfil == "Aprendiz":
-            st.success("🏅 Badge desbloqueada: Explorador Multivariado")
-
-        elif perfil == "Mestre":
+        if perfil == "Mestre":
             st.subheader("Tabela completa de loadings")
-
             tabela_loadings = pd.DataFrame(
                 loadings,
                 index=X.columns,
                 columns=[f"PC{i+1}" for i in range(loadings.shape[1])]
             )
-
             st.dataframe(tabela_loadings)
 
-        st.subheader("Quiz")
+        perguntas = [
+            {
+                "pergunta": "1. PCA é uma técnica usada principalmente para:",
+                "opcoes": ["Explorar padrões", "Medir pH", "Calcular massa molar", "Fazer titulação"]
+            },
+            {
+                "pergunta": "2. O gráfico de scores mostra:",
+                "opcoes": ["Relação entre amostras", "Somente reagentes", "Somente variáveis", "RMSEP"]
+            },
+            {
+                "pergunta": "3. O gráfico de loadings ajuda a interpretar:",
+                "opcoes": ["Contribuição das variáveis", "Cor da solução", "Número de alunos", "Temperatura ambiente"]
+            },
+            {
+                "pergunta": "4. PC1 corresponde à componente que:",
+                "opcoes": ["Explica maior variância", "Tem menor massa", "É sempre ruído", "É sempre outlier"]
+            },
+            {
+                "pergunta": "5. Um agrupamento no gráfico de scores pode indicar:",
+                "opcoes": ["Similaridade entre amostras", "Erro obrigatório", "Ausência de dados", "Fim da análise"]
+            }
+        ]
 
-        st.radio(
-            "Quantos PCs parecem explicar a maior parte da variância?",
-            ["1", "2", "3", "Mais de 3"],
-            key="quiz_pca"
+        gabarito = [
+            "Explorar padrões",
+            "Relação entre amostras",
+            "Contribuição das variáveis",
+            "Explica maior variância",
+            "Similaridade entre amostras"
+        ]
+
+        quiz(
+            "Reconhecimento de Padrões",
+            perguntas,
+            gabarito,
+            proxima_fase=4,
+            badge="Explorador Multivariado"
         )
 
 
-elif modulo == "Classificação":
+# =========================
+# FASES FUTURAS
+# =========================
 
-    st.header("🎯 Classificação")
-    st.info("Módulo em desenvolvimento.")
+elif fase_escolhida == 4:
 
-
-elif modulo == "Calibração":
-
-    st.header("📐 Calibração")
-    st.info("Módulo em desenvolvimento.")
+    st.header("🎯 Fase 4 — Classificação")
+    st.info("Módulo em desenvolvimento. Será liberado na próxima versão.")
 
 
-elif modulo == "Escape Room":
+elif fase_escolhida == 5:
 
-    st.header("🔓 Escape Room Quimiométrico")
-    st.info("Módulo em desenvolvimento.")
+    st.header("📐 Fase 5 — Calibração")
+    st.info("Módulo em desenvolvimento. Será liberado na próxima versão.")
+
+
+elif fase_escolhida == 6:
+
+    st.header("🔓 Fase Final — Escape Room")
+    st.info("Módulo em desenvolvimento. Será liberado na próxima versão.")
+
+
+# =========================
+# BADGES
+# =========================
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🏅 Badges conquistadas")
+
+if st.session_state.badges:
+    for b in st.session_state.badges:
+        st.sidebar.write(f"🏅 {b}")
+else:
+    st.sidebar.write("Nenhuma badge ainda.")
