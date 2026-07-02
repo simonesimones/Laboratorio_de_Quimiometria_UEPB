@@ -391,6 +391,7 @@ elif fase_escolhida == 3:
                 columns=[f"PC{i+1}" for i in range(loadings.shape[1])]
             )
             st.dataframe(tabela_loadings)
+        
         st.markdown("---")
         st.subheader("🌳 HCA — Análise Hierárquica de Agrupamentos")
 
@@ -428,7 +429,7 @@ elif fase_escolhida == 3:
             "Amostras que se unem em menores distâncias são mais semelhantes."
         )
 
-       perguntas = [
+        perguntas = [
             {
                 "pergunta": "1. PCA é uma técnica usada principalmente para:",
                 "opcoes": ["Explorar padrões", "Medir pH", "Calcular massa molar", "Fazer titulação"]
