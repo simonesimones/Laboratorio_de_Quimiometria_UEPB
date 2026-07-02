@@ -1,3 +1,5 @@
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.spatial.distance import pdist
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -389,8 +391,44 @@ elif fase_escolhida == 3:
                 columns=[f"PC{i+1}" for i in range(loadings.shape[1])]
             )
             st.dataframe(tabela_loadings)
+        st.markdown("---")
+        st.subheader("🌳 HCA — Análise Hierárquica de Agrupamentos")
 
-        perguntas = [
+        metodo_ligacao = st.selectbox(
+            "Método de ligação",
+            ["ward", "complete", "average", "single"]
+        )
+
+        metrica = st.selectbox(
+            "Métrica de distância",
+            ["euclidean", "cityblock", "cosine"]
+        )
+
+        if metodo_ligacao == "ward" and metrica != "euclidean":
+            st.warning("O método Ward é recomendado apenas com distância Euclidiana. A métrica foi ajustada para Euclidean.")
+            metrica = "euclidean"
+
+        distancias = pdist(Xproc, metric=metrica)
+        Z = linkage(distancias, method=metodo_ligacao)
+
+        fig4, ax4 = plt.subplots(figsize=(10, 5))
+        dendrogram(
+            Z,
+            labels=[str(i+1) for i in range(Xproc.shape[0])],
+            ax=ax4
+        )
+
+        ax4.set_xlabel("Amostras")
+        ax4.set_ylabel("Distância")
+        ax4.set_title("Dendrograma")
+        st.pyplot(fig4)
+
+        st.info(
+            "O dendrograma permite visualizar a similaridade entre as amostras. "
+            "Amostras que se unem em menores distâncias são mais semelhantes."
+        )
+
+       perguntas = [
             {
                 "pergunta": "1. PCA é uma técnica usada principalmente para:",
                 "opcoes": ["Explorar padrões", "Medir pH", "Calcular massa molar", "Fazer titulação"]
@@ -404,12 +442,12 @@ elif fase_escolhida == 3:
                 "opcoes": ["Contribuição das variáveis", "Cor da solução", "Número de alunos", "Temperatura ambiente"]
             },
             {
-                "pergunta": "4. PC1 corresponde à componente que:",
-                "opcoes": ["Explica maior variância", "Tem menor massa", "É sempre ruído", "É sempre outlier"]
+                "pergunta": "4. No HCA, o dendrograma mostra:",
+                "opcoes": ["Similaridade entre amostras", "Somente calibração", "A fórmula molecular", "A concentração real"]
             },
             {
-                "pergunta": "5. Um agrupamento no gráfico de scores pode indicar:",
-                "opcoes": ["Similaridade entre amostras", "Erro obrigatório", "Ausência de dados", "Fim da análise"]
+                "pergunta": "5. Amostras que se unem em menor distância no dendrograma são:",
+                "opcoes": ["Mais semelhantes", "Sempre erradas", "Mais concentradas obrigatoriamente", "Excluídas automaticamente"]
             }
         ]
 
@@ -417,8 +455,8 @@ elif fase_escolhida == 3:
             "Explorar padrões",
             "Relação entre amostras",
             "Contribuição das variáveis",
-            "Explica maior variância",
-            "Similaridade entre amostras"
+            "Similaridade entre amostras",
+            "Mais semelhantes"
         ]
 
         quiz(
@@ -426,7 +464,7 @@ elif fase_escolhida == 3:
             perguntas,
             gabarito,
             proxima_fase=4,
-            badge="Explorador Multivariado"
+            badge="Detetive Quimiométrico"
         )
 
 
