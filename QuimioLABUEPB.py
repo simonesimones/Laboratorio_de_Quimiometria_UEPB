@@ -267,12 +267,33 @@ Juntas, PC1 e PC2 explicam {explained[0] + explained[1]:.2f}% da variabilidade d
 
             st.dataframe(tabela_loadings)
 
-        st.subheader("Quiz")
+       st.subheader("Quiz")
 
-        st.radio(
-            "Quantos PCs parecem explicar a maior parte da variância?",
-            ["1", "2", "3", "Mais de 3"]
-        )
+variancia_acumulada = np.cumsum(explained)
+n_pcs_95 = np.argmax(variancia_acumulada >= 95) + 1
+
+if n_pcs_95 <= 3:
+    gabarito = str(n_pcs_95)
+else:
+    gabarito = "Mais de 3"
+
+resposta = st.radio(
+    "Quantos PCs são necessários para explicar pelo menos 95% da variância?",
+    ["1", "2", "3", "Mais de 3"],
+    key="quiz_pca"
+)
+
+if st.button("Verificar resposta"):
+
+    if resposta == gabarito:
+        st.success(f"✅ Correto! Resposta: {gabarito}.")
+    else:
+        st.error(f"❌ Ainda não. A resposta correta é: {gabarito}.")
+
+    st.info(
+        f"Variância acumulada: {variancia_acumulada[n_pcs_95-1]:.2f}% "
+        f"com {n_pcs_95} PC(s)."
+    )
 
 
 #####################################
