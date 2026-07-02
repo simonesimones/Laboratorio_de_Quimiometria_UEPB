@@ -33,6 +33,7 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
+
 def carregar_dados(chave):
     arquivo = st.file_uploader(
         "Carregue CSV ou XLSX",
@@ -61,21 +62,17 @@ def aplicar_preprocessamento(X, metodo):
     if metodo == "Nenhum":
         return X.copy()
 
-    elif metodo == "Centralização":
+    if metodo == "Centralização":
         return X - X.mean()
 
-    elif metodo == "Autoescalamento":
+    if metodo == "Autoescalamento":
         return (X - X.mean()) / X.std()
 
-    elif metodo == "SNV":
+    if metodo == "SNV":
         return X.sub(X.mean(axis=1), axis=0).div(X.std(axis=1), axis=0)
 
     return X.copy()
 
-
-#####################################
-# EXPLORADOR DE DADOS
-#####################################
 
 if modulo == "Explorador de Dados":
 
@@ -95,7 +92,7 @@ if modulo == "Explorador de Dados":
         st.subheader("Estatística descritiva")
         st.dataframe(X.describe())
 
-        variavel = st.selectbox("Escolha uma variável", X.columns)
+        variavel = st.selectbox("Escolha uma variável", X.columns, key="var_explorador")
 
         st.subheader("Histograma")
         fig, ax = plt.subplots()
@@ -128,10 +125,6 @@ if modulo == "Explorador de Dados":
         st.success("🏅 Badge desbloqueada: Explorador Químico")
 
 
-#####################################
-# PRÉ-PROCESSAMENTO
-#####################################
-
 elif modulo == "Pré-processamento":
 
     st.header("🔬 Pré-processamento")
@@ -142,7 +135,8 @@ elif modulo == "Pré-processamento":
 
         metodo = st.selectbox(
             "Método",
-            ["Nenhum", "Centralização", "Autoescalamento", "SNV"]
+            ["Nenhum", "Centralização", "Autoescalamento", "SNV"],
+            key="metodo_prep"
         )
 
         Xproc = aplicar_preprocessamento(X, metodo)
@@ -153,7 +147,7 @@ elif modulo == "Pré-processamento":
         st.subheader("Dados processados")
         st.dataframe(Xproc.head())
 
-        variavel = st.selectbox("Escolha uma variável", X.columns)
+        variavel = st.selectbox("Escolha uma variável", X.columns, key="var_prep")
 
         st.subheader("Comparação: Histograma")
         fig, ax = plt.subplots()
@@ -185,10 +179,6 @@ elif modulo == "Pré-processamento":
         st.success("🏅 Badge desbloqueada: Mestre do Pré-processamento")
 
 
-#####################################
-# RECONHECIMENTO DE PADRÕES
-#####################################
-
 elif modulo == "Reconhecimento de Padrões":
 
     st.header("📈 Reconhecimento de Padrões — PCA")
@@ -199,7 +189,8 @@ elif modulo == "Reconhecimento de Padrões":
 
         metodo = st.selectbox(
             "Pré-processamento",
-            ["Nenhum", "Centralização", "Autoescalamento", "SNV"]
+            ["Nenhum", "Centralização", "Autoescalamento", "SNV"],
+            key="metodo_pca"
         )
 
         Xproc = aplicar_preprocessamento(X, metodo)
@@ -210,13 +201,14 @@ elif modulo == "Reconhecimento de Padrões":
         explained = pca.explained_variance_ratio_ * 100
 
         st.subheader("Variância explicada")
-        st.write(pd.DataFrame({
+        tabela_variancia = pd.DataFrame({
             "Componente": [f"PC{i+1}" for i in range(len(explained))],
             "Variância explicada (%)": explained
-        }).head(10))
+        })
+        st.dataframe(tabela_variancia.head(10))
 
         fig, ax = plt.subplots()
-        ax.plot(range(1, len(explained)+1), explained, marker="o")
+        ax.plot(range(1, len(explained) + 1), explained, marker="o")
         ax.set_xlabel("Componente principal")
         ax.set_ylabel("Variância explicada (%)")
         st.pyplot(fig)
@@ -227,7 +219,7 @@ elif modulo == "Reconhecimento de Padrões":
         ax2.scatter(scores[:, 0], scores[:, 1])
 
         for i in range(scores.shape[0]):
-            ax2.text(scores[i, 0], scores[i, 1], str(i+1))
+            ax2.text(scores[i, 0], scores[i, 1], str(i + 1))
 
         ax2.set_xlabel(f"PC1 ({explained[0]:.1f}%)")
         ax2.set_ylabel(f"PC2 ({explained[1]:.1f}%)")
@@ -267,38 +259,14 @@ Juntas, PC1 e PC2 explicam {explained[0] + explained[1]:.2f}% da variabilidade d
 
             st.dataframe(tabela_loadings)
 
-       st.subheader("Quiz")
+        st.subheader("Quiz")
 
-variancia_acumulada = np.cumsum(explained)
-n_pcs_95 = np.argmax(variancia_acumulada >= 95) + 1
+        st.radio(
+            "Quantos PCs parecem explicar a maior parte da variância?",
+            ["1", "2", "3", "Mais de 3"],
+            key="quiz_pca"
+        )
 
-if n_pcs_95 <= 3:
-    gabarito = str(n_pcs_95)
-else:
-    gabarito = "Mais de 3"
-
-resposta = st.radio(
-    "Quantos PCs são necessários para explicar pelo menos 95% da variância?",
-    ["1", "2", "3", "Mais de 3"],
-    key="quiz_pca"
-)
-
-if st.button("Verificar resposta"):
-
-    if resposta == gabarito:
-        st.success(f"✅ Correto! Resposta: {gabarito}.")
-    else:
-        st.error(f"❌ Ainda não. A resposta correta é: {gabarito}.")
-
-    st.info(
-        f"Variância acumulada: {variancia_acumulada[n_pcs_95-1]:.2f}% "
-        f"com {n_pcs_95} PC(s)."
-    )
-
-
-#####################################
-# CLASSIFICAÇÃO
-#####################################
 
 elif modulo == "Classificação":
 
@@ -306,19 +274,11 @@ elif modulo == "Classificação":
     st.info("Módulo em desenvolvimento.")
 
 
-#####################################
-# CALIBRAÇÃO
-#####################################
-
 elif modulo == "Calibração":
 
     st.header("📐 Calibração")
     st.info("Módulo em desenvolvimento.")
 
-
-#####################################
-# ESCAPE ROOM
-#####################################
 
 elif modulo == "Escape Room":
 
